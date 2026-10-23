@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ArahAssist · Pendamping Suroboyo Bus
 
-## Getting Started
+Aplikasi web (Next.js, bisa dipasang sebagai PWA) yang menemani penumpang Suroboyo Bus dari rumah sampai tujuan: rencanakan rute asal–tujuan (termasuk transit), lacak bus secara langsung dengan tampilan 3D, dapat pengingat "Siap-siap turun", dan jelajahi wisata Surabaya. Ada juga asisten AI "Tanya ArahAssist".
 
-First, run the development server:
+> Prototipe hackathon: posisi bus, kepadatan, dan transaksi adalah **simulasi** di atas geometri rute dan halte asli.
+
+## Menjalankan
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Produksi:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Asisten AI (opsional)
 
-## Learn More
+Salin `.env.example` menjadi `.env.local` lalu isi `ANTHROPIC_API_KEY`. Tanpa kunci, asisten tetap jalan: jawaban diambil dari FAQ dan perencana rute bawaan (label "Dari FAQ ArahAssist").
 
-To learn more about Next.js, take a look at the following resources:
+### URL untuk demo/pitch
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| URL | Fungsi |
+|---|---|
+| `/` | Beranda |
+| `/?demo=results` | Langsung ke pilihan rute UINSA → Tunjungan Plaza |
+| `/?demo=ride` | Langsung naik bus dan dipandu sampai turun |
+| `/?lang=en` | Mode Bahasa Inggris |
+| `/?speed=40` | Kecepatan simulasi bus (4–40×, bawaan 20×) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Fitur
 
-## Deploy on Vercel
+- Perencana asal–tujuan ala KAI: tukar arah, waktu berangkat, penumpang umum/pelajar
+- 5 koridor (R1–R5) dengan transit otomatis di Siola, Tugu Pahlawan, Joyoboyo, Rajawali
+- Lacak bus (kode lambung, pelat, kepadatan, ramah kursi roda) dengan mode 3D
+- Pengingat turun: getar + notifikasi satu halte sebelum tujuan, lonceng pengingat di halte mana pun
+- ETA jujur berupa rentang waktu dan jumlah halte
+- Tiket QR & ArahAssist Pay (simulasi), lapor masalah di bus
+- Wisata: 20 destinasi, 5 paket rute, event kota, Paspor Wisata (stempel)
+- Asisten AI dengan tool `cari_rute` dan `buat_itinerary`
+- Dua bahasa (Indonesia/English), riwayat perjalanan & transaksi
+- Saldo, stempel, rute tersimpan, dan riwayat tersimpan di perangkat (localStorage)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Perubahan dari desain TemanBis
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Nama menjadi **ArahAssist**, dan palet warna menjadi Aegean Sky `#1664B0` (header, navigasi, info), Sandy Linen `#EFE8DE` (latar), Scarlet Bikini `#D21624` (tombol aksi utama, peringatan turun, tujuan)
+- Gaya visual mengikuti aplikasi transportasi lokal (KAI Access, Traveloka): header biru polos, kartu pencarian putih, menu pintasan, kartu promo bergambar dengan teks di bawah. Tanpa gradien, efek kaca, atau ikon "sparkle". Komponen Beranda ada di `src/components/HomeScreen.jsx`, token warna dan ikon di `src/components/ui.jsx`
+- Alur dipermudah:
+  - Layar cari tujuan langsung menampilkan tempat populer, jadi tidak perlu mengetik dulu
+  - Saat sampai di halte, bus terdekat langsung dilacak. "Ganti bus" tetap tersedia
+  - Panel pilihan rute di HP lebih pendek supaya rute di peta terlihat
+- Perbaikan:
+  - Simulasi tetap berjalan saat tab di latar belakang atau perangkat lambat, sehingga pengingat turun tetap muncul
+  - Tombol "Saya sudah turun" kontrasnya diperbaiki
+  - Kartu tidak lagi terpotong di halaman Wisata
+
+## Struktur
+
+```
+src/app/page.tsx              entry + parameter demo
+src/app/api/chat/route.ts     relay Claude (Anthropic SDK); loop tool berjalan di klien
+src/components/ArahAssistApp.jsx  logika aplikasi (state, simulasi, peta MapLibre, AI)
+src/components/AppView.jsx    tampilan (hasil konversi template desain)
+src/lib/core.js               jaringan rute, simulator bus, perencana rute, teks dua bahasa
+src/lib/routes.js, data.js    geometri koridor (OSM/OSRM), foto Wikimedia Commons
+design-src/                   ekspor desain asli (referensi)
+```
+
+Peta: MapLibre GL + OpenFreeMap (cadangan CARTO). Pencarian lokasi bebas: Photon/Nominatim (OSM).

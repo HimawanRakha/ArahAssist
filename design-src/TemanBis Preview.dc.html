@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#E3E2DD}
+a{color:#15171C} a:hover{color:#C2490C}
+</style>
+</helmet>
+<div style="padding:64px; display:flex; flex-direction:column; gap:32px; font-family:'Plus Jakarta Sans', system-ui, sans-serif; color:#15171C; width:max-content;">
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <span style="font-size:32px; font-weight:800; letter-spacing:-0.03em;">TemanBis · Pendamping Suroboyo Bus</span>
+    <span style="font-size:18px; color:#5C616B;">Aplikasi lengkap: beranda asal–tujuan, 5 koridor dengan transit, pelacakan bus 3D, wisata, tiket QR, dan AI. Data simulasi. <a href="TemanBis App.dc.html" target="_blank">Buka layar penuh</a></span>
+  </div>
+  <div style="display:flex; gap:48px; align-items:flex-start;">
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <span style="font-size:15px; font-weight:700; color:#5C616B;">HP · 390 × 844</span>
+      <div style="width:414px; height:868px; padding:12px; border-radius:56px; background:#15171C; box-shadow:0 30px 60px rgba(21,23,28,.25);">
+        <iframe src="TemanBis App.dc.html" title="TemanBis mobile" style="width:390px; height:844px; border:0; border-radius:44px; display:block; background:#E9E8E3;"></iframe>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <span style="font-size:15px; font-weight:700; color:#5C616B;">Laptop · 1440 × 900</span>
+      <div style="width:1440px; height:900px; border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 30px 60px rgba(21,23,28,.2); border:1px solid #D6D5D0;">
+        <iframe src="TemanBis App.dc.html" title="TemanBis desktop" style="width:1440px; height:900px; border:0; display:block;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

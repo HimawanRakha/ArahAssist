@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#E9E8E3;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+a{color:#15171C;text-decoration:underline;text-underline-offset:2px}
+a:hover{color:#C2490C}
+button{font-family:inherit}
+input::placeholder{color:#6B7079;font-weight:500}
+@keyframes tbPulse{0%{transform:scale(1);opacity:.45}100%{transform:scale(3.2);opacity:0}}
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="position:relative; width:100%; height:100vh; min-height:560px; overflow:hidden; background:#E9E8E3; font-family:'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; color:#15171C; font-size:16px; line-height:1.45;">
+
+  <div ref="{{ mapRef }}" style="position:absolute; inset:0;"></div>
+
+  <sc-if value="{{ showBrandPill }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; z-index:4; top:12px; left:12px; display:flex; align-items:center; gap:8px; padding:6px 14px 6px 6px; background:#fff; border-radius:999px; box-shadow:0 1px 2px rgba(21,23,28,.06), 0 6px 20px rgba(21,23,28,.10);">
+      <span style="width:32px; height:32px; border-radius:10px; background:#FFD43B; display:grid; place-items:center; color:#15171C;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="3"></rect><path d="M4 11h16"></path><path d="M8 15h.01"></path><path d="M16 15h.01"></path><path d="M6 19v2"></path><path d="M18 19v2"></path></svg></span>
+      <span style="font-weight:800; font-size:17px; letter-spacing:-0.02em;">TemanBis</span>
+    </div>
+    <div style="position:absolute; z-index:3; top:16px; right:12px; font-size:12px; color:#5C616B; background:rgba(255,255,255,.85); padding:3px 8px; border-radius:6px;">© <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color:#5C616B;">OpenStreetMap</a></div>
+  </sc-if>
+
+  <sc-if value="{{ showNarrowCtrls }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; z-index:4; right:12px; bottom:{{ L.ctrlBottom }}; display:flex; flex-direction:column; align-items:flex-end; gap:10px; transition:bottom .25s ease;">
+      <button onClick="{{ recenter }}" aria-label="Pusatkan peta" style="width:48px; height:48px; border-radius:50%; background:#fff; border:0; box-shadow:0 1px 2px rgba(21,23,28,.08), 0 6px 18px rgba(21,23,28,.12); display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="M12 2v3"></path><path d="M12 19v3"></path><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.5"></circle></svg></button>
+      <button onClick="{{ openChat }}" style="height:48px; padding:0 18px 0 14px; border-radius:999px; background:#15171C; color:#fff; border:0; display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(21,23,28,.22);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>Tanya</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showWideTanya }}" hint-placeholder-val="{{ true }}">
+    <button onClick="{{ openChat }}" style="position:absolute; z-index:4; top:16px; right:16px; height:48px; padding:0 20px 0 16px; border-radius:999px; background:#15171C; color:#fff; border:0; display:flex; align-items:center; gap:10px; font-size:16px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(21,23,28,.22);" style-hover="background:#2A2D34"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>Tanya TemanBis</button>
+  </sc-if>
+
+  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; z-index:4; right:16px; bottom:16px; display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+      <div style="display:flex; flex-direction:column; background:#fff; border-radius:14px; box-shadow:0 1px 2px rgba(21,23,28,.08), 0 6px 18px rgba(21,23,28,.12); overflow:hidden;">
+        <button onClick="{{ zoomIn }}" aria-label="Perbesar" style="width:44px; height:44px; border:0; background:#fff; display:grid; place-items:center; cursor:pointer; color:#15171C;" style-hover="background:#F3F3F0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button>
+        <div style="height:1px; background:#ECECE8;"></div>
+        <button onClick="{{ zoomOut }}" aria-label="Perkecil" style="width:44px; height:44px; border:0; background:#fff; display:grid; place-items:center; cursor:pointer; color:#15171C;" style-hover="background:#F3F3F0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"></path></svg></button>
+      </div>
+      <button onClick="{{ recenter }}" aria-label="Pusatkan peta" style="width:44px; height:44px; border-radius:14px; background:#fff; border:0; box-shadow:0 1px 2px rgba(21,23,28,.08), 0 6px 18px rgba(21,23,28,.12); display:grid; place-items:center; cursor:pointer; color:#15171C;" style-hover="background:#F3F3F0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="M12 2v3"></path><path d="M12 19v3"></path><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.5"></circle></svg></button>
+      <div style="font-size:12px; color:#5C616B; background:rgba(255,255,255,.85); padding:3px 8px; border-radius:6px;">© <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color:#5C616B;">OpenStreetMap</a> · OpenFreeMap</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ top.normal }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; z-index:6; top:{{ L.tcTop }}; left:{{ L.tcLeft }}; right:{{ L.tcRight }}; width:{{ L.tcWidth }}; border-radius:20px; padding:16px 18px 14px; background:#15171C; color:#fff; box-shadow:0 10px 30px rgba(21,23,28,.28); display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+        <div style="display:flex; flex-direction:column; min-width:0;">
+          <span style="font-size:14px; font-weight:600; color:#C3C6CC;">{{ rd.nextLbl }}</span>
+          <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; line-height:1.15;">{{ rd.nextName }}</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; text-align:right; flex-shrink:0;">
+          <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; line-height:1.15; font-variant-numeric:tabular-nums;">{{ rd.leftN }}</span>
+          <span style="font-size:14px; font-weight:600; color:#C3C6CC;">halte lagi turun</span>
+        </div>
+      </div>
+      <div style="height:4px; border-radius:2px; background:rgba(255,255,255,.16); overflow:hidden;"><div style="height:100%; width:{{ rd.pct }}; background:#FFD43B; border-radius:2px; transition:width .3s linear;"></div></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ top.alert }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; z-index:6; top:{{ L.tcTop }}; left:{{ L.tcLeft }}; right:{{ L.tcRight }}; width:{{ L.tcWidth }}; border-radius:20px; padding:16px 18px; background:#FFD43B; color:#15171C; box-shadow:0 10px 30px rgba(21,23,28,.25); display:flex; gap:14px; align-items:flex-start;">
+      <span style="width:44px; height:44px; flex-shrink:0; border-radius:14px; background:#15171C; color:#FFD43B; display:grid; place-items:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span>
+      <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; line-height:1.15;">{{ top.title }}</span>
+        <span style="font-size:16px; font-weight:600; line-height:1.4;">{{ top.body }}</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <div ref="{{ sheetRef }}" style="position:absolute; z-index:5; left:{{ L.pLeft }}; right:{{ L.pRight }}; top:{{ L.pTop }}; bottom:{{ L.pBottom }}; width:{{ L.pWidth }}; max-height:{{ L.pMaxH }}; border-radius:{{ L.pRadius }}; background:#fff; box-shadow:0 1px 3px rgba(21,23,28,.06), 0 12px 40px rgba(21,23,28,.14); display:flex; flex-direction:column; overflow:hidden;">
+
+    <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; justify-content:center; padding:10px 0 4px; flex-shrink:0;"><div style="width:40px; height:4px; border-radius:2px; background:#DCDCD7;"></div></div>
+    </sc-if>
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; align-items:center; gap:10px; padding:18px 20px 6px; flex-shrink:0;">
+        <span style="width:36px; height:36px; border-radius:11px; background:#FFD43B; display:grid; place-items:center; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="3"></rect><path d="M4 11h16"></path><path d="M8 15h.01"></path><path d="M16 15h.01"></path><path d="M6 19v2"></path><path d="M18 19v2"></path></svg></span>
+        <div style="display:flex; flex-direction:column; line-height:1.2;">
+          <span style="font-weight:800; font-size:18px; letter-spacing:-0.02em;">TemanBis</span>
+          <span style="font-size:14px; color:#5C616B; font-weight:500;">Pendamping Suroboyo Bus</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- HOME -->
+    <sc-if value="{{ is.home }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:10px 20px 22px; display:flex; flex-direction:column; gap:22px;">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <span style="font-size:16px; color:#5C616B; font-weight:600;">Selamat siang, Rina</span>
+            <button onClick="{{ goSearch }}" style="height:60px; width:100%; display:flex; align-items:center; gap:12px; padding:0 8px 0 18px; background:#F3F3F0; border:0; border-radius:18px; font-size:19px; font-weight:800; letter-spacing:-0.01em; color:#15171C; cursor:pointer; text-align:left;" style-hover="background:#ECECE7">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg>
+              <span style="flex:1;">Mau ke mana?</span>
+              <span style="width:44px; height:44px; border-radius:13px; background:#FFD43B; display:grid; place-items:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span>
+            </button>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <span style="font-size:14px; font-weight:700; color:#5C616B;">Halte favorit</span>
+            <sc-if value="{{ hasFav }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <sc-for list="{{ favStops }}" as="f" hint-placeholder-count="2">
+                  <button onClick="{{ f.open }}" style="min-height:44px; padding:8px 14px 8px 12px; display:flex; align-items:center; gap:8px; border-radius:999px; border:1px solid #E4E4DF; background:#fff; font-size:16px; font-weight:700; color:#15171C; cursor:pointer;" style-hover="border-color:#15171C">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#F5B800" stroke="#F5B800" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg>
+                    <span style="white-space:nowrap;">{{ f.short }}</span>
+                    <span style="color:#5C616B; font-weight:600; white-space:nowrap;">{{ f.next }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noFav }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:16px; color:#5C616B;">Buka halte lalu tekan bintang untuk menyimpannya di sini.</span>
+            </sc-if>
+          </div>
+
+          <div style="display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:6px;">
+              <span style="font-size:14px; font-weight:700; color:#5C616B;">Halte terdekat</span>
+              <span style="display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:#15803D;"><span style="width:8px; height:8px; border-radius:50%; background:#1E9E5A; box-shadow:0 0 0 3px rgba(30,158,90,.18);"></span>Live</span>
+            </div>
+            <sc-for list="{{ nearby }}" as="s" hint-placeholder-count="3">
+              <button onClick="{{ s.open }}" style="width:100%; display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 0; border:0; border-top:1px solid #EFEFEC; background:none; text-align:left; color:#15171C; cursor:pointer;">
+                <span style="width:44px; height:44px; border-radius:13px; background:#F3F3F0; display:grid; place-items:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="3"></rect><path d="M4 11h16"></path><path d="M8 15h.01"></path><path d="M16 15h.01"></path><path d="M6 19v2"></path><path d="M18 19v2"></path></svg></span>
+                <span style="display:flex; flex-direction:column; min-width:0;">
+                  <span style="font-weight:700; font-size:16px;">{{ s.name }}</span>
+                  <span style="font-size:15px; color:#5C616B;">{{ s.sub }}</span>
+                </span>
+                <span style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                  <span style="display:flex; align-items:center; gap:6px;"><span style="display:inline-grid; place-items:center; min-width:30px; height:22px; padding:0 6px; border-radius:6px; background:#C2490C; color:#fff; font-size:13px; font-weight:800;">R1</span><span style="font-weight:800; font-size:16px; white-space:nowrap;">{{ s.away }}</span></span>
+                  <span style="font-size:15px; color:#5C616B; white-space:nowrap;">{{ s.eta }}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- STOP -->
+    <sc-if value="{{ is.stop }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:10px 20px 22px; display:flex; flex-direction:column; gap:18px;">
+          <div style="display:flex; align-items:flex-start; gap:12px;">
+            <button onClick="{{ back }}" aria-label="Kembali" style="width:44px; height:44px; flex-shrink:0; border-radius:14px; background:#F3F3F0; border:0; display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></button>
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+              <span style="font-size:22px; font-weight:800; letter-spacing:-0.02em; line-height:1.2;">{{ sv.name }}</span>
+              <span style="font-size:16px; color:#5C616B;">{{ sv.road }} · arah Rajawali</span>
+            </div>
+            <button onClick="{{ sv.toggleFav }}" aria-label="Simpan ke favorit" style="width:44px; height:44px; flex-shrink:0; border-radius:14px; background:#F3F3F0; border:0; display:grid; place-items:center; cursor:pointer;"><svg width="20" height="20" viewBox="0 0 24 24" fill="{{ sv.starFill }}" stroke="{{ sv.starStroke }}" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg></button>
+          </div>
+
+          <div style="border:1px solid #E8E8E4; border-radius:20px; padding:18px; display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="display:flex; align-items:center; gap:8px;"><span style="display:inline-grid; place-items:center; min-width:36px; height:28px; padding:0 8px; border-radius:8px; background:#C2490C; color:#fff; font-size:15px; font-weight:800;">R1</span><span style="font-weight:700;">ke Rajawali</span></span>
+              <span style="display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:#15803D;"><span style="width:8px; height:8px; border-radius:50%; background:#1E9E5A; box-shadow:0 0 0 3px rgba(30,158,90,.18);"></span>Live</span>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-size:36px; font-weight:800; letter-spacing:-0.03em; line-height:1.1;">{{ sv.firstAway }}</span>
+              <span style="font-size:16px; color:#5C616B;">{{ sv.firstEta }}</span>
+            </div>
+            <sc-for list="{{ sv.rest }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding-top:12px; border-top:1px solid #EFEFEC;">
+                <span style="font-weight:700;">Bus setelahnya</span>
+                <span style="display:flex; gap:8px; align-items:baseline;"><span style="font-weight:800;">{{ r.away }}</span><span style="color:#5C616B;">{{ r.eta }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:flex-start; color:#5C616B; font-size:15px; line-height:1.45;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 16v-4.5"></path><path d="M12 8h.01"></path></svg>
+            <span>Waktu adalah perkiraan. Bus ikut arus lalu lintas, jadi kami tampilkan posisi bus dan rentang waktu.</span>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- BUS -->
+    <sc-if value="{{ is.bus }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:10px 20px 22px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; align-items:flex-start; gap:12px;">
+            <button onClick="{{ back }}" aria-label="Kembali" style="width:44px; height:44px; flex-shrink:0; border-radius:14px; background:#F3F3F0; border:0; display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></button>
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+              <span style="display:flex; align-items:center; gap:8px;"><span style="display:inline-grid; place-items:center; min-width:36px; height:28px; padding:0 8px; border-radius:8px; background:#C2490C; color:#fff; font-size:15px; font-weight:800;">R1</span><span style="font-size:22px; font-weight:800; letter-spacing:-0.02em;">ke Rajawali</span></span>
+              <span style="font-size:16px; color:#5C616B; padding-top:2px;">{{ bv.status }}</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-size:14px; font-weight:700; color:#5C616B; padding-bottom:4px;">Halte berikutnya</span>
+            <sc-for list="{{ bv.next }}" as="n" hint-placeholder-count="4">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-top:1px solid #EFEFEC;">
+                <span style="font-weight:700;">{{ n.name }}</span>
+                <span style="color:#5C616B; white-space:nowrap;">{{ n.eta }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SEARCH -->
+    <sc-if value="{{ is.search }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="padding:10px 20px 14px; display:flex; flex-direction:column; gap:14px; flex-shrink:0;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <button onClick="{{ back }}" aria-label="Kembali" style="width:44px; height:44px; border-radius:14px; background:#F3F3F0; border:0; display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></button>
+            <span style="font-size:22px; font-weight:800; letter-spacing:-0.02em;">Mau ke mana?</span>
+          </div>
+          <div style="position:relative; border:1.5px solid #E4E4DF; border-radius:18px; padding:4px 14px 4px 44px;">
+            <div style="position:absolute; left:19px; top:28px; width:10px; height:10px; border-radius:50%; background:#2E6BFF; box-shadow:0 0 0 3px rgba(46,107,255,.18);"></div>
+            <div style="position:absolute; left:23px; top:44px; height:26px; border-left:2px dotted #B9BBC0;"></div>
+            <div style="position:absolute; left:19px; top:78px; width:10px; height:10px; border-radius:2px; background:#15171C;"></div>
+            <div style="height:54px; display:flex; flex-direction:column; justify-content:center; border-bottom:1px solid #EFEFEC;">
+              <span style="font-size:13px; font-weight:700; color:#5C616B; line-height:1.2;">Dari</span>
+              <span style="font-size:16px; font-weight:700; line-height:1.3;">Lokasi saya · dekat Kampus UINSA</span>
+            </div>
+            <div style="height:54px; display:flex; flex-direction:column; justify-content:center;">
+              <span style="font-size:13px; font-weight:700; color:#5C616B; line-height:1.2;">Ke</span>
+              <input ref="{{ searchRef }}" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Cari tempat, alamat, atau halte" style="height:26px; border:0; outline:none; padding:0; font-family:inherit; font-size:16px; font-weight:700; color:#15171C; background:transparent; width:100%;">
+            </div>
+          </div>
+        </div>
+        <div style="overflow-y:auto; padding:0 20px 22px; display:flex; flex-direction:column;">
+          <span style="font-size:14px; font-weight:700; color:#5C616B; padding-bottom:4px;">{{ resLbl }}</span>
+          <sc-for list="{{ results }}" as="p" hint-placeholder-count="5">
+            <button onClick="{{ p.pick }}" style="width:100%; display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:12px; align-items:center; padding:10px 0; border:0; border-top:1px solid #EFEFEC; background:none; text-align:left; color:#15171C; cursor:{{ p.cursor }};">
+              <span style="width:44px; height:44px; border-radius:13px; background:#F3F3F0; display:grid; place-items:center; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+              <span style="display:flex; flex-direction:column; min-width:0;">
+                <span style="font-weight:700; color:{{ p.color }};">{{ p.name }}</span>
+                <span style="font-size:15px; color:#5C616B;">{{ p.sub }}</span>
+              </span>
+              <sc-if value="{{ p.off }}"><span style="font-size:13px; font-weight:700; color:#5C616B; background:#F3F3F0; padding:4px 9px; border-radius:999px; white-space:nowrap;">Belum tercakup</span></sc-if>
+              <sc-if value="{{ p.on }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A8F98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></sc-if>
+            </button>
+          </sc-for>
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:16px 0; color:#5C616B; border-top:1px solid #EFEFEC;">Tidak ketemu. Prototipe ini baru mencakup tempat di sepanjang koridor R1.</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- OPTIONS -->
+    <sc-if value="{{ is.options }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:10px 20px 18px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <button onClick="{{ back }}" aria-label="Kembali" style="width:44px; height:44px; flex-shrink:0; border-radius:14px; background:#F3F3F0; border:0; display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></button>
+            <div style="display:flex; flex-direction:column; min-width:0;">
+              <span style="font-size:14px; font-weight:700; color:#5C616B;">Dari lokasi saya ke</span>
+              <span style="font-size:22px; font-weight:800; letter-spacing:-0.02em; line-height:1.2;">{{ plan.dest }}</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:15px; color:#15171C; background:#F6F6F3; border-radius:12px; padding:10px 12px;">
+            <span style="width:8px; height:8px; flex-shrink:0; border-radius:50%; background:#1E9E5A; box-shadow:0 0 0 3px rgba(30,158,90,.18);"></span>
+            <span>Bus R1 berikutnya di Halte UINSA: <b>{{ plan.busAway }}</b></span>
+          </div>
+          <sc-for list="{{ opts }}" as="o" hint-placeholder-count="2">
+            <button onClick="{{ o.select }}" style="width:100%; text-align:left; padding:16px; border-radius:20px; border:2px solid {{ o.border }}; background:#fff; cursor:pointer; display:flex; flex-direction:column; gap:12px; color:#15171C; transition:border-color .15s;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;">
+                <span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <span style="font-size:26px; font-weight:800; letter-spacing:-0.025em; line-height:1.1; font-variant-numeric:tabular-nums;">{{ o.range }}</span>
+                  <sc-if value="{{ o.rec }}"><span style="font-size:13px; font-weight:800; padding:4px 10px; border-radius:999px; background:#FFD43B;">Disarankan</span></sc-if>
+                </span>
+                <span style="font-size:15px; color:#5C616B; white-space:nowrap;">Tiba {{ o.arrive }}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span style="display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px; border-radius:9px; background:#F3F3F0; font-size:15px; font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"></path><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"></path></svg>{{ o.walk1 }}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8F98" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+                <span style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 10px 0 4px; border-radius:9px; background:#F3F3F0; font-size:15px; font-weight:700;"><span style="display:inline-grid; place-items:center; min-width:30px; height:24px; padding:0 6px; border-radius:6px; background:#C2490C; color:#fff; font-size:13px; font-weight:800;">R1</span>{{ o.nStops }}</span>
+                <sc-if value="{{ o.hasWalk2 }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8F98" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+                  <span style="display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px; border-radius:9px; background:#F3F3F0; font-size:15px; font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"></path><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"></path></svg>{{ o.walk2 }}</span>
+                </sc-if>
+              </div>
+              <div style="font-size:15px; color:#5C616B; line-height:1.45;">Turun di <b style="color:#15171C;">{{ o.alight }}</b><br>Tanpa transit · jalan kaki {{ o.walkTotal }} · Rp5.000</div>
+            </button>
+          </sc-for>
+        </div>
+        <div style="padding:12px 20px 20px; border-top:1px solid #EFEFEC; flex-shrink:0;">
+          <button onClick="{{ goWalk }}" style="height:56px; width:100%; border:0; border-radius:16px; background:#FFD43B; color:#15171C; font-size:17px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;" style-hover="background:#FFCB12">Lihat langkah<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- STEP PROGRESS (walk / wait / ride / arrive) -->
+    <sc-if value="{{ showSteps }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 20px 0; flex-shrink:0;">
+        <sc-if value="{{ canBack }}">
+          <button onClick="{{ back }}" aria-label="Kembali" style="width:44px; height:44px; flex-shrink:0; border-radius:14px; background:#F3F3F0; border:0; display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></button>
+        </sc-if>
+        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+          <span style="font-size:14px; font-weight:700; color:#5C616B;">{{ stepLbl }} · ke {{ plan.dest }}</span>
+          <div style="display:flex; gap:6px;">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="3">
+              <div style="flex:1; height:4px; border-radius:2px; background:{{ b.bg }};"></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- WALK -->
+    <sc-if value="{{ is.walk }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:16px 20px 20px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:24px; font-weight:800; letter-spacing:-0.025em; line-height:1.2;">{{ wk.title }}</span>
+            <span style="font-size:16px; color:#5C616B;">{{ wk.mins }}</span>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start; background:#FFF6D1; border-radius:16px; padding:14px 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15171C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span style="font-size:16px; font-weight:600; line-height:1.45;">Halte ada di <b>seberang kampus</b>, sisi barat Jl. Ahmad Yani, arah ke Kota.</span>
+          </div>
+          <div style="display:flex; flex-direction:column;">
+            <sc-for list="{{ wk.steps }}" as="t" hint-placeholder-count="3">
+              <div style="display:grid; grid-template-columns:28px minmax(0,1fr); column-gap:12px;">
+                <div style="position:relative; display:flex; justify-content:center;">
+                  <div style="position:absolute; top:28px; bottom:0px; left:13px; width:2px; background:{{ t.line }};"></div>
+                  <span style="position:relative; width:28px; height:28px; border-radius:50%; background:#15171C; color:#fff; font-size:14px; font-weight:800; display:grid; place-items:center;">{{ t.n }}</span>
+                </div>
+                <span style="font-size:16px; line-height:1.45; padding:3px 0 18px;">{{ t.text }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:15px; background:#F6F6F3; border-radius:12px; padding:10px 12px;">
+            <span style="width:8px; height:8px; flex-shrink:0; border-radius:50%; background:#1E9E5A; box-shadow:0 0 0 3px rgba(30,158,90,.18);"></span>
+            <span>Bus R1 kamu: <b>{{ wk.bus }}</b></span>
+          </div>
+        </div>
+        <div style="padding:12px 20px 20px; border-top:1px solid #EFEFEC; flex-shrink:0;">
+          <button onClick="{{ goWait }}" style="height:56px; width:100%; border:0; border-radius:16px; background:#FFD43B; color:#15171C; font-size:17px; font-weight:800; cursor:pointer;" style-hover="background:#FFCB12">Saya sudah di halte</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- WAIT -->
+    <sc-if value="{{ is.wait }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:16px 20px 20px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:24px; font-weight:800; letter-spacing:-0.025em; line-height:1.2;">Tunggu bus R1 ke Rajawali</span>
+            <span style="font-size:16px; color:#5C616B;">Di Halte UINSA, sisi barat jalan</span>
+          </div>
+          <div style="border:1px solid #E8E8E4; border-radius:20px; padding:18px 18px 12px; display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="display:inline-grid; place-items:center; min-width:36px; height:28px; padding:0 8px; border-radius:8px; background:#C2490C; color:#fff; font-size:15px; font-weight:800;">R1</span>
+              <span style="display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:#15803D;"><span style="width:8px; height:8px; border-radius:50%; background:#1E9E5A; box-shadow:0 0 0 3px rgba(30,158,90,.18);"></span>Live</span>
+            </div>
+            <span style="font-size:36px; font-weight:800; letter-spacing:-0.03em; line-height:1.1; padding-top:4px;">{{ wt.big }}</span>
+            <span style="font-size:16px; color:#5C616B;">{{ wt.sub }}</span>
+            <div style="position:relative; height:70px; margin-top:8px;">
+              <div style="position:absolute; left:6%; right:6%; top:18px; height:4px; border-radius:2px; background:#ECECE8;"></div>
+              <div style="position:absolute; left:6%; width:{{ wt.fill }}; top:18px; height:4px; border-radius:2px; background:#F2711C;"></div>
+              <sc-for list="{{ wt.nodes }}" as="n" hint-placeholder-count="3">
+                <div style="position:absolute; left:{{ n.left }}; top:12px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:8px;">
+                  <div style="width:16px; height:16px; border-radius:50%; background:#fff; border:3px solid {{ n.ring }};"></div>
+                  <span style="font-size:14px; font-weight:{{ n.weight }}; white-space:nowrap;">{{ n.label }}</span>
+                </div>
+              </sc-for>
+              <div style="position:absolute; left:{{ wt.busLeft }}; top:0px; transform:translateX(-50%); width:40px; height:40px; border-radius:12px; background:#FFD43B; border:2.5px solid #fff; box-shadow:0 4px 12px rgba(21,23,28,.2); display:grid; place-items:center; transition:left .3s linear;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15171C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="3"></rect><path d="M4 11h16"></path><path d="M8 15h.01"></path><path d="M16 15h.01"></path><path d="M6 19v2"></path><path d="M18 19v2"></path></svg></div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:16px; line-height:1.45;">
+            <div style="display:flex; gap:10px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><path d="M20 6 9 17l-5-5"></path></svg><span>Cek tulisan di kaca depan bus: <b>R1 · Rajawali</b>.</span></div>
+            <div style="display:flex; gap:10px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><path d="M20 6 9 17l-5-5"></path></svg><span>Bayar Rp5.000 saat naik. <a href="#" onClick="{{ askPay }}" style="font-weight:700;">Bayarnya pakai apa?</a></span></div>
+          </div>
+          <span style="font-size:15px; color:#5C616B;">{{ wt.next }}</span>
+        </div>
+        <div style="padding:12px 20px 20px; border-top:1px solid #EFEFEC; flex-shrink:0;">
+          <button onClick="{{ board }}" style="height:56px; width:100%; border:0; border-radius:16px; background:#FFD43B; color:#15171C; font-size:17px; font-weight:800; cursor:pointer;" style-hover="background:#FFCB12">Saya sudah naik</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- RIDE -->
+    <sc-if value="{{ is.ride }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div ref="{{ rideRef }}" onWheel="{{ onRideWheel }}" onTouchMove="{{ onRideWheel }}" style="position:relative; overflow-y:auto; padding:16px 20px 16px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:24px; font-weight:800; letter-spacing:-0.025em; line-height:1.2;">Turun di {{ rd.alight }}</span>
+            <span style="font-size:16px; color:#5C616B;">Kami kabari satu halte sebelumnya.</span>
+          </div>
+          <div style="display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); border:1px solid #E8E8E4; border-radius:18px;">
+            <div style="padding:12px 14px; display:flex; flex-direction:column; gap:2px;">
+              <span style="font-size:14px; font-weight:600; color:#5C616B;">Tiba di halte</span>
+              <span style="font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; white-space:nowrap;">{{ rd.arrive }}</span>
+            </div>
+            <div style="padding:12px 14px; display:flex; flex-direction:column; gap:2px; border-left:1px solid #EFEFEC;">
+              <span style="font-size:14px; font-weight:600; color:#5C616B;">Sisa</span>
+              <span style="font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;">{{ rd.leftTxt }}</span>
+            </div>
+            <div style="padding:12px 14px; display:flex; flex-direction:column; gap:2px; border-left:1px solid #EFEFEC;">
+              <span style="font-size:14px; font-weight:600; color:#5C616B;">Jarak</span>
+              <span style="font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;">{{ rd.dist }}</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column;">
+            <sc-for list="{{ rd.rows }}" as="r" hint-placeholder-count="6">
+              <div data-cur="{{ r.cur }}" style="display:grid; grid-template-columns:28px minmax(0,1fr) auto; column-gap:12px; align-items:center; min-height:44px;">
+                <div style="position:relative; align-self:stretch; display:grid; place-items:center;">
+                  <div style="position:absolute; left:13px; width:2px; top:0px; height:50%; background:{{ r.lt }};"></div>
+                  <div style="position:absolute; left:13px; width:2px; top:50%; bottom:0px; background:{{ r.lb }};"></div>
+                  <sc-if value="{{ r.isBus }}"><div style="position:relative; width:28px; height:28px; border-radius:9px; background:#FFD43B; display:grid; place-items:center; box-shadow:0 0 0 3px #fff;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15171C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="3"></rect><path d="M4 11h16"></path><path d="M6 19v2"></path><path d="M18 19v2"></path></svg></div></sc-if>
+                  <sc-if value="{{ r.isStop }}"><div style="position:relative; width:{{ r.size }}; height:{{ r.size }}; border-radius:50%; background:{{ r.fill }}; border:{{ r.border }}; box-shadow:0 0 0 3px #fff;"></div></sc-if>
+                </div>
+                <span style="font-size:16px; font-weight:{{ r.weight }}; color:{{ r.color }}; padding:10px 0;">{{ r.name }}</span>
+                <sc-if value="{{ r.hasTag }}"><span style="font-size:13px; font-weight:800; padding:4px 10px; border-radius:999px; background:{{ r.tagBg }}; color:#15171C; white-space:nowrap;">{{ r.tag }}</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:12px 20px 20px; border-top:1px solid #EFEFEC; flex-shrink:0;">
+          <sc-if value="{{ rd.arrived }}">
+            <button onClick="{{ alight }}" style="height:56px; width:100%; border:0; border-radius:16px; background:#FFD43B; color:#15171C; font-size:17px; font-weight:800; cursor:pointer;" style-hover="background:#FFCB12">Saya sudah turun</button>
+          </sc-if>
+          <sc-if value="{{ rd.notArrived }}">
+            <button onClick="{{ alight }}" style="height:52px; width:100%; border:1.5px solid #DCDCD7; border-radius:16px; background:#fff; color:#15171C; font-size:16px; font-weight:700; cursor:pointer;" style-hover="border-color:#15171C">Saya sudah turun</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ARRIVE -->
+    <sc-if value="{{ is.arrive }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:16px 20px 20px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:24px; font-weight:800; letter-spacing:-0.025em; line-height:1.2;">{{ ar.title }}</span>
+            <span style="font-size:16px; color:#5C616B;">{{ ar.mins }}</span>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start; background:#FFF6D1; border-radius:16px; padding:14px 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15171C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span style="font-size:16px; font-weight:600; line-height:1.45;">{{ ar.callout }}</span>
+          </div>
+          <div style="display:flex; flex-direction:column;">
+            <sc-for list="{{ ar.steps }}" as="t" hint-placeholder-count="3">
+              <div style="display:grid; grid-template-columns:28px minmax(0,1fr); column-gap:12px;">
+                <div style="position:relative; display:flex; justify-content:center;">
+                  <div style="position:absolute; top:28px; bottom:0px; left:13px; width:2px; background:{{ t.line }};"></div>
+                  <span style="position:relative; width:28px; height:28px; border-radius:50%; background:#15171C; color:#fff; font-size:14px; font-weight:800; display:grid; place-items:center;">{{ t.n }}</span>
+                </div>
+                <span style="font-size:16px; line-height:1.45; padding:3px 0 18px;">{{ t.text }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:12px 20px 20px; border-top:1px solid #EFEFEC; flex-shrink:0;">
+          <button onClick="{{ arrived }}" style="height:56px; width:100%; border:0; border-radius:16px; background:#FFD43B; color:#15171C; font-size:17px; font-weight:800; cursor:pointer;" style-hover="background:#FFCB12">Saya sudah sampai</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- DONE -->
+    <sc-if value="{{ is.done }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+        <div style="overflow-y:auto; padding:16px 20px 20px; display:flex; flex-direction:column; gap:18px;">
+          <span style="width:56px; height:56px; border-radius:18px; background:#FFD43B; display:grid; place-items:center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#15171C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span style="font-size:28px; font-weight:800; letter-spacing:-0.03em; line-height:1.15;">Sampai di {{ dn.dest }}</span>
+            <span style="font-size:16px; color:#5C616B;">Perjalanan dengan Suroboyo Bus selesai. Mudah, kan?</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); border:1px solid #E8E8E4; border-radius:18px; overflow:hidden;">
+            <div style="padding:14px 16px; display:flex; flex-direction:column; gap:2px;"><span style="font-size:14px; font-weight:600; color:#5C616B;">Waktu tempuh</span><span style="font-size:20px; font-weight:800; letter-spacing:-0.01em;">{{ dn.dur }}</span></div>
+            <div style="padding:14px 16px; display:flex; flex-direction:column; gap:2px; border-left:1px solid #EFEFEC;"><span style="font-size:14px; font-weight:600; color:#5C616B;">Tarif</span><span style="font-size:20px; font-weight:800; letter-spacing:-0.01em;">Rp5.000</span></div>
+            <div style="padding:14px 16px; display:flex; flex-direction:column; gap:2px; border-top:1px solid #EFEFEC;"><span style="font-size:14px; font-weight:600; color:#5C616B;">Jalan kaki</span><span style="font-size:20px; font-weight:800; letter-spacing:-0.01em;">{{ dn.walk }}</span></div>
+            <div style="padding:14px 16px; display:flex; flex-direction:column; gap:2px; border-top:1px solid #EFEFEC; border-left:1px solid #EFEFEC;"><span style="font-size:14px; font-weight:600; color:#5C616B;">Naik bus</span><span style="font-size:20px; font-weight:800; letter-spacing:-0.01em;">{{ dn.stops }}</span></div>
+          </div>
+        </div>
+        <div style="padding:12px 20px 20px; border-top:1px solid #EFEFEC; flex-shrink:0; display:flex; flex-direction:column; gap:10px;">
+          <button onClick="{{ toggleSaved }}" style="height:52px; width:100%; border:1.5px solid #DCDCD7; border-radius:16px; background:#fff; color:#15171C; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;" style-hover="border-color:#15171C"><svg width="18" height="18" viewBox="0 0 24 24" fill="{{ dn.starFill }}" stroke="{{ dn.starStroke }}" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg>{{ dn.saveLbl }}</button>
+          <button onClick="{{ finish }}" style="height:56px; width:100%; border:0; border-radius:16px; background:#FFD43B; color:#15171C; font-size:17px; font-weight:800; cursor:pointer;" style-hover="background:#FFCB12">Selesai</button>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- CHAT -->
+  <sc-if value="{{ chatBackdrop }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeChat }}" style="position:absolute; inset:0; z-index:19; background:rgba(21,23,28,.32);"></div>
+  </sc-if>
+  <sc-if value="{{ chatOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; z-index:20; top:{{ L.chTop }}; right:{{ L.chRight }}; bottom:{{ L.chBottom }}; left:{{ L.chLeft }}; width:{{ L.chWidth }}; background:#fff; border-radius:{{ L.chRadius }}; box-shadow:0 12px 40px rgba(21,23,28,.2); display:flex; flex-direction:column; overflow:hidden;">
+      <div style="display:flex; align-items:center; gap:12px; padding:16px 16px 14px 20px; border-bottom:1px solid #EFEFEC; flex-shrink:0;">
+        <span style="width:40px; height:40px; border-radius:12px; background:#15171C; color:#fff; display:grid; place-items:center; flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></span>
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.25;">
+          <span style="font-size:17px; font-weight:800;">Tanya TemanBis</span>
+          <span style="font-size:14px; color:#5C616B;">Tarif, cara bayar, jam, aturan naik</span>
+        </div>
+        <button onClick="{{ closeChat }}" aria-label="Tutup" style="width:44px; height:44px; border-radius:14px; background:#F3F3F0; border:0; display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+      </div>
+      <div ref="{{ msgRef }}" style="flex:1; overflow-y:auto; padding:16px 16px 8px; display:flex; flex-direction:column; gap:10px; background:#FAFAF8;">
+        <sc-for list="{{ msgs }}" as="m" hint-placeholder-count="1">
+          <sc-if value="{{ m.bot }}">
+            <div style="align-self:flex-start; max-width:86%; display:flex; flex-direction:column; gap:4px;">
+              <div style="background:#fff; border:1px solid #EAEAE6; border-radius:4px 18px 18px 18px; padding:11px 14px; font-size:16px; line-height:1.45;">{{ m.text }}</div>
+              <sc-if value="{{ m.hasSrc }}"><span style="font-size:13px; color:#5C616B; padding-left:4px;">{{ m.src }}</span></sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ m.me }}">
+            <div style="align-self:flex-end; max-width:80%; background:#15171C; color:#fff; border-radius:18px 4px 18px 18px; padding:11px 14px; font-size:16px; line-height:1.45;">{{ m.text }}</div>
+          </sc-if>
+        </sc-for>
+        <sc-if value="{{ typing }}">
+          <div style="align-self:flex-start; background:#fff; border:1px solid #EAEAE6; border-radius:4px 18px 18px 18px; padding:11px 14px; font-size:16px; color:#5C616B;">Mengetik…</div>
+        </sc-if>
+      </div>
+      <div style="display:flex; gap:8px; overflow-x:auto; padding:10px 16px 4px; flex-shrink:0; background:#FAFAF8;">
+        <sc-for list="{{ quick }}" as="q" hint-placeholder-count="4">
+          <button onClick="{{ q.ask }}" style="flex-shrink:0; min-height:40px; padding:8px 14px; border-radius:999px; border:1px solid #E0E0DB; background:#fff; font-size:15px; font-weight:700; color:#15171C; cursor:pointer; white-space:nowrap;" style-hover="border-color:#15171C">{{ q.text }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:8px; padding:10px 16px 16px; flex-shrink:0; background:#FAFAF8;">
+        <input value="{{ chatInput }}" onChange="{{ onChatInput }}" onKeyDown="{{ onChatKey }}" placeholder="Tulis pertanyaan…" style="flex:1; min-width:0; height:48px; border:1.5px solid #E0E0DB; border-radius:14px; padding:0 14px; font-family:inherit; font-size:16px; font-weight:500; color:#15171C; background:#fff; outline:none;">
+        <button onClick="{{ sendChat }}" aria-label="Kirim" style="width:48px; height:48px; flex-shrink:0; border:0; border-radius:14px; background:#FFD43B; display:grid; place-items:center; cursor:pointer; color:#15171C;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg></button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:25,&quot;min&quot;:5,&quot;max&quot;:60,&quot;step&quot;:5,&quot;unit&quot;:&quot;×&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Simulasi&quot;},&quot;startStep&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;home&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;search&quot;,&quot;options&quot;,&quot;walk&quot;,&quot;wait&quot;,&quot;ride&quot;,&quot;arrive&quot;,&quot;done&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Simulasi&quot;}}">
+const ROAD = { purabaya:'Terminal Purabaya', menanggal:'Jl. Ahmad Yani', margorejo:'Jl. Ahmad Yani', uinsa:'Jl. Ahmad Yani', royal:'Jl. Ahmad Yani', joyoboyo:'Jl. Wonokromo', kbs:'Jl. Raya Darmo', bungkul:'Jl. Raya Darmo', darmo:'Jl. Raya Darmo', urip:'Jl. Urip Sumoharjo', basra:'Jl. Basuki Rahmat', siola:'Jl. Tunjungan', pahlawan:'Jl. Pahlawan', rajawali:'Jl. Rajawali' };
+const PLACES = [
+  { id:'tp', name:'Tunjungan Plaza', sub:'Mal · Jl. Basuki Rahmat', ll:[112.7389,-7.2626] },
+  { id:'bungkul', name:'Taman Bungkul', sub:'Taman · Jl. Raya Darmo', ll:[112.7395,-7.2913] },
+  { id:'kbs', name:'Kebun Binatang Surabaya', sub:'Wisata · Wonokromo', ll:[112.7366,-7.2963] },
+  { id:'royalp', name:'Royal Plaza', sub:'Mal · Jl. Ahmad Yani', ll:[112.7350,-7.3091] },
+  { id:'tugu', name:'Tugu Pahlawan', sub:'Monumen · Jl. Pahlawan', ll:[112.7378,-7.2458] },
+  { id:'galaxy', name:'Galaxy Mall', sub:'Mal · Jl. Dharmahusada', ll:[112.7811,-7.2752], off:true },
+];
+const FAQ = [
+  { k:['bayar','qris','e-money','emoney','kartu','tunai','cash','uang','flazz','brizzi','gopay','ovo','dana'], a:'Bisa pakai QRIS dari e-wallet atau m-banking, atau tap kartu uang elektronik (e-money Mandiri, Flazz, Brizzi, TapCash). Bayar saat masuk lewat pintu depan. Belum bisa bayar tunai.' },
+  { k:['tarif','harga','biaya','berapa','ongkos','mahal','murah','pelajar','mahasiswa'], a:'Rp5.000 sekali jalan untuk umum. Pelajar dan mahasiswa Rp2.500 dengan kartu pelajar. Tiket berlaku 2 jam, jadi pindah bus dalam waktu itu tidak bayar lagi.' },
+  { k:['jam','buka','operasional','malam','pagi','minggu','libur','sampai jam','beroperasi'], a:'Bus R1 jalan setiap hari pukul 05.00–22.00, termasuk hari libur. Di jam sibuk pagi dan sore, bus datang lebih sering.' },
+  { k:['bawa','barang','koper','sepeda','hewan','makan','minum','rokok','tas'], a:'Boleh bawa tas dan koper selama tidak menghalangi jalan. Sepeda lipat boleh kalau dilipat. Dilarang makan, minum, dan merokok di dalam bus.' },
+  { k:['aturan','turun','antre','prioritas','lansia','hamil','disabilitas','kursi roda','berdiri'], a:'Naik dan turun hanya di halte resmi. Antre di pintu depan, dan beri tahu petugas kalau mau turun. Kursi prioritas untuk lansia, ibu hamil, dan penyandang disabilitas.' },
+];
+const QUICK = ['Bayarnya pakai apa?', 'Berapa tarifnya?', 'Jam operasional?', 'Boleh bawa koper?'];
+const BASE_CLOCK = 13*3600 + 42*60, V_AVG = 5.6, DWELL = 18, WALK_V = 1.2;
+const BUS_SVG = s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="3"/><path d="M4 11h16"/><path d="M8 15h.01"/><path d="M16 15h.01"/><path d="M6 19v2"/><path d="M18 19v2"/></svg>`;
+const PIN_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+const RASTER = { version:8, sources:{ c:{ type:'raster', tileSize:256, tiles:['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png','https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'] } }, layers:[{ id:'c', type:'raster', source:'c' }] };
+const EMPTY = { type:'FeatureCollection', features:[] };
+const hav = (a,b) => { const r = Math.PI/180, x = (b[0]-a[0])*r*Math.cos((a[1]+b[1])/2*r), y = (b[1]-a[1])*r; return Math.sqrt(x*x+y*y)*6371000; };
+const fmtM = m => m < 1000 ? `${Math.max(10, Math.round(m/10)*10)} m` : `${(m/1000).toFixed(1).replace('.', ',')} km`;
+const clock = sec => { const t = ((Math.round(sec/60)) % 1440 + 1440) % 1440; return `${String(Math.floor(t/60)).padStart(2,'0')}.${String(t%60).padStart(2,'0')}`; };
+const range = sec => { const m = sec/60; if (m < 2) return [0,2]; const f = m >= 20 ? [0.9,1.15] : [0.85,1.3]; let lo = Math.max(1, Math.floor(m*f[0])), hi = Math.ceil(m*f[1]); if (m >= 8) { lo = Math.floor(lo/5)*5; hi = Math.ceil(hi/5)*5; } if (hi - lo < 2) hi = lo + 2; return [lo, hi]; };
+const rangeTxt = sec => { const [lo,hi] = range(sec); return lo === 0 ? `kurang dari ${hi} mnt` : `${lo}–${hi} mnt`; };
+const clockRange = (now, sec) => { const [lo,hi] = range(sec); const c5 = s => Math.ceil(s/300)*300; return `${clock(c5(now+lo*60))}–${clock(c5(now+Math.max(hi,lo+5)*60))}`; };
+const short = n => n.replace(/^Halte |^Terminal /, '');
+const lineFC = c => ({ type:'Feature', properties:{}, geometry:{ type:'LineString', coordinates:c } });
+
+class Component extends DCLogic {
+  state = { w:1200, h:800, sheetH:320, step:'home', stopId:null, busId:null, query:'', destId:null, opt:0, chatOpen:false, chatInput:'', typing:false, msgs:[{ bot:true, text:'Halo! Saya bisa bantu soal tarif, cara bayar, jam operasional, dan aturan naik Suroboyo Bus. Mau tanya apa?' }], fav:['uinsa','basra'], saved:false, tick:0, ready:false };
+  rootRef = React.createRef(); mapRef = React.createRef(); sheetRef = React.createRef(); searchRef = React.createRef(); msgRef = React.createRef(); rideRef = React.createRef();
+  simT = 0; tracked = null; holdAt = null; rideDur = 1800; alerted = false;
+
+  componentDidMount() {
+    this.ro = new ResizeObserver(() => this.measure());
+    if (this.rootRef.current) this.ro.observe(this.rootRef.current);
+    this.observeSheet();
+    this.measure();
+    this.boot();
+  }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); this.ro && this.ro.disconnect(); this.map && this.map.remove(); }
+  measure() { const r = this.rootRef.current, s = this.sheetRef.current; if (!r) return; this.setState({ w:r.clientWidth, h:r.clientHeight, sheetH: s ? s.offsetHeight : 320 }); }
+  observeSheet() { const s = this.sheetRef.current; if (s && s !== this._obs) { this._obs = s; this.ro.observe(s); } }
+  snap() { const S = this.state; return { step:S.step, destId:S.destId, opt:S.opt, stopId:S.stopId, busId:S.busId, wide:S.w >= 760, msgs:S.msgs.length, typing:S.typing, chatOpen:S.chatOpen, startStep:this.props.startStep }; }
+  componentDidUpdate() {
+    this.observeSheet();
+    const S = this.state, c = this.snap(), ps = this._prev || c;
+    this._prev = c;
+    if (ps === c) return;
+    if (ps.step !== c.step || ps.destId !== c.destId || ps.opt !== c.opt || ps.stopId !== c.stopId || ps.busId !== c.busId || ps.wide !== c.wide) requestAnimationFrame(() => requestAnimationFrame(() => this.applyStep()));
+    if (c.step === 'search' && ps.step !== 'search') setTimeout(() => this.searchRef.current && this.searchRef.current.focus(), 60);
+    if (ps.msgs !== c.msgs || ps.typing !== c.typing || (c.chatOpen && !ps.chatOpen)) setTimeout(() => { const m = this.msgRef.current; if (m) m.scrollTop = m.scrollHeight; }, 30);
+    if (ps.startStep !== c.startStep && S.ready) this.jump(c.startStep);
+  }
+
+  async boot() {
+    try { this.prep(await import(new URL('temanbis-data.js', document.baseURI).href)); }
+    catch (e) { console.error('TemanBis data', e); return; }
+    this.setState({ ready:true });
+    const t0 = Date.now();
+    while (!window.maplibregl && Date.now() - t0 < 15000) await new Promise(r => setTimeout(r, 100));
+    if (window.maplibregl) this.initMap();
+    this.last = performance.now(); this.lastUI = 0; this.lastFollow = 0;
+    const loop = now => { this.tick(now); this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
+    if (this.props.startStep && this.props.startStep !== 'home') this.jump(this.props.startStep);
+  }
+
+  prep(m) {
+    const line = m.R1, cum = [0];
+    for (let i = 1; i < line.length; i++) cum.push(cum[i-1] + hav(line[i-1], line[i]));
+    const stops = m.STOPS.map((s, i) => ({ ...s, i, short: short(s.name), road: ROAD[s.id] || '' }));
+    const byId = Object.fromEntries(stops.map(s => [s.id, s]));
+    this.D = { line, cum, total: cum[cum.length-1], stops, byId, origin: byId.uinsa, user: m.USER, walk1: m.WALK1, walk1M: m.WALK1_M, walk2: m.WALK2, walk2M: m.WALK2_M };
+    this.buses = [ { id:'b1', d:1850, seed:.3 }, { id:'b2', d:5400, seed:1.7 }, { id:'b3', d:9300, seed:2.9 }, { id:'b4', d:12800, seed:4.1 }, { id:'b5', d:0, dwell:200, atStop:'purabaya', seed:5.3 } ].map(b => ({ dwell:0, atStop:null, hold:false, ...b }));
+  }
+  pointAt(d) { const { line, cum, total } = this.D; d = Math.max(0, Math.min(d, total)); let lo = 0, hi = cum.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; } const t = (d - cum[lo]) / ((cum[hi] - cum[lo]) || 1); return [line[lo][0] + (line[hi][0] - line[lo][0]) * t, line[lo][1] + (line[hi][1] - line[lo][1]) * t]; }
+  slice(d0, d1) { const { line, cum } = this.D, out = [this.pointAt(d0)]; for (let i = 0; i < line.length; i++) if (cum[i] > d0 && cum[i] < d1) out.push(line[i]); out.push(this.pointAt(d1)); return out; }
+  bus(id) { return this.buses && this.buses.find(b => b.id === id); }
+  nextStop(b) { return this.D.stops.find(s => s.at > b.d + 0.5) || this.D.stops[this.D.stops.length-1]; }
+  awayTo(b, s) { if (b.atStop === s.id) return 0; return this.D.stops.filter(x => x.at > b.d + 0.5 && x.at <= s.at + 0.5).length; }
+  etaTo(b, s) { if (b.atStop === s.id && (b.dwell > 0 || b.hold)) return 0; if (b.d > s.at + 0.5) return null; const n = this.D.stops.filter(x => x.at > b.d + 0.5 && x.at < s.at - 0.5).length; return (s.at - b.d) / V_AVG + n * DWELL + Math.max(0, b.dwell || 0); }
+  arrivals(s) { return this.buses.map(b => ({ b, eta: this.etaTo(b, s), n: this.awayTo(b, s) })).filter(x => x.eta != null).sort((a, b) => a.eta - b.eta); }
+  awayTxt(x) { if (!x) return 'Tidak ada bus'; if (x.n === 0 || x.eta === 0) return 'Di halte'; if (x.eta < 90) return 'Segera tiba'; return `${x.n} halte lagi`; }
+  allPlaces() { const D = this.D; return [...PLACES, ...D.stops.filter(s => s.i > D.origin.i).map(s => ({ id:'s:'+s.id, name:s.name, sub:`Halte R1 · ${s.road}`, ll:s.lngLat }))]; }
+  options(place) {
+    const D = this.D;
+    const c = D.stops.filter(s => s.i > D.origin.i).map(s => ({ s, dist: hav(s.lngLat, place.ll) })).sort((a, b) => a.dist - b.dist);
+    const mk = x => { const real = place.id === 'tp' && x.s.id === 'basra'; const walkM = real ? D.walk2M : (x.dist < 15 ? 0 : Math.round(x.dist * 1.3 / 10) * 10); return { alight: x.s, walkM, walk2: real ? [...D.walk2, place.ll] : [x.s.lngLat, place.ll], nStops: D.stops.filter(s => s.at > D.origin.at && s.at <= x.s.at).length, rideM: x.s.at - D.origin.at }; };
+    const cost = o => o.rideM / V_AVG + Math.max(0, o.nStops - 1) * DWELL + o.walkM / WALK_V;
+    const all = c.slice(0, 3).map(mk).sort((a, b) => cost(a) - cost(b));
+    const out = [all[0]]; if (all[1] && all[0].walkM > 0 && all[1].walkM < 1400) out.push(all[1]);
+    return out;
+  }
+  plan() { if (!this.D || !this.state.destId) return null; const place = this.allPlaces().find(p => p.id === this.state.destId); if (!place) return null; const opts = this.options(place); return { place, opts, ...(opts[this.state.opt] || opts[0]) }; }
+  pickTracked() { const a = this.arrivals(this.D.origin)[0]; this.tracked = a ? a.b.id : 'b5'; }
+
+  tick(now) {
+    const dt = Math.min(0.1, (now - this.last) / 1000); this.last = now;
+    const st = this.state.step, D = this.D;
+    const sdt = dt * ((st === 'wait' || st === 'ride') ? (Number(this.props.simSpeed) || 25) : 1.5);
+    this.simT += sdt;
+    for (const b of this.buses) {
+      if (b.id === this.tracked && this.holdAt && b.atStop === this.holdAt) b.hold = true;
+      if (b.hold) continue;
+      if (b.dwell > 0) { b.dwell -= sdt; continue; }
+      const v = V_AVG * (0.7 + 0.6 * (0.5 + 0.5 * Math.sin(this.simT / 41 + b.seed * 2)));
+      const nd = b.d + v * sdt;
+      if (nd >= D.total) { b.d = 0; b.atStop = 'purabaya'; b.dwell = 240; continue; }
+      const s = D.stops.find(x => x.at > b.d + 0.5 && x.at <= nd);
+      if (s) { b.d = s.at; b.atStop = s.id; b.dwell = DWELL; } else { b.d = nd; b.atStop = null; }
+    }
+    if (this.map) {
+      for (const b of this.buses) this.busMk[b.id] && this.busMk[b.id].setLngLat(this.pointAt(b.d));
+      this.styleBuses();
+      if (st === 'ride' && now - this.lastFollow > 1200) { this.lastFollow = now; const b = this.bus(this.tracked); if (b) this.map.easeTo({ center: this.pointAt(b.d), padding: this.pad(), duration: 1150, easing: t => t }); }
+    }
+    if (st === 'ride' && !this.alerted) { const p = this.plan(), b = this.bus(this.tracked); if (p && b && b.d > D.origin.at + 1 && this.awayTo(b, p.alight) <= 1) { this.alerted = true; this.notify(p.alight); } }
+    if (now - this.lastUI > 250) { this.lastUI = now; this.setState(s => ({ tick: s.tick + 1 }), () => { if (this.state.step === 'ride') this.followList(); }); }
+  }
+  followList() {
+    const box = this.rideRef.current; if (!box || this._userScroll && performance.now() - this._userScroll < 4000) return;
+    const row = box.querySelector('[data-cur="1"]'); if (!row) return;
+    const target = Math.max(0, row.offsetTop - box.offsetTop - box.clientHeight * 0.35);
+    if (Math.abs(box.scrollTop - target) > 4) box.scrollTo({ top: target, behavior: 'smooth' });
+  }
+  notify(stop) { try { navigator.vibrate && navigator.vibrate([200, 100, 200]); if ('Notification' in window && Notification.permission === 'granted') new Notification('Siap-siap turun', { body: `Halte berikutnya: ${stop.name}` }); } catch (e) {} }
+
+  initMap() {
+    const D = this.D, gl = window.maplibregl;
+    const map = this.map = new gl.Map({ container: this.mapRef.current, style: 'https://tiles.openfreemap.org/styles/positron', center: D.user, zoom: 14.6, attributionControl: false, dragRotate: false, pitchWithRotate: false });
+    map.touchZoomRotate.disableRotation();
+    map.on('error', e => { if (e && e.error && (e.error.name === 'AbortError' || /abort/i.test(e.error.message || ''))) return; console.warn('map', e && e.error); });
+    map.on('style.load', () => this.addLayers());
+    setTimeout(() => { if (!this.mapReady) { console.warn('Vector tiles slow, using raster fallback'); map.setStyle(RASTER); } }, 9000);
+    map.on('click', 'stops', e => { const id = e.features[0].properties.id; if (['home','stop','bus'].includes(this.state.step)) this.openStop(id); });
+    map.on('mouseenter', 'stops', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'stops', () => { map.getCanvas().style.cursor = ''; });
+    const u = document.createElement('div');
+    u.style.cssText = 'position:relative;width:18px;height:18px';
+    u.innerHTML = '<div style="position:absolute;inset:0;border-radius:50%;background:#2E6BFF;animation:tbPulse 2.2s ease-out infinite"></div><div style="position:absolute;inset:0;border-radius:50%;background:#2E6BFF;box-shadow:0 0 0 3px #fff,0 2px 6px rgba(0,0,0,.3)"></div>';
+    this.userEl = u; this.userMk = new gl.Marker({ element: u }).setLngLat(D.user).addTo(map);
+    this.busMk = {}; this.busEl = {};
+    for (const b of this.buses) {
+      const el = document.createElement('div');
+      el.style.cssText = 'width:30px;height:30px;border-radius:10px;background:#15171C;color:#fff;display:grid;place-items:center;box-shadow:0 0 0 2.5px #fff,0 4px 10px rgba(21,23,28,.25);cursor:pointer;transition:background .2s,color .2s,width .2s,height .2s';
+      el.innerHTML = BUS_SVG(16); el.title = 'Bus R1 ke Rajawali';
+      el.addEventListener('click', ev => { ev.stopPropagation(); if (['home','stop','bus'].includes(this.state.step)) this.setState({ step:'bus', busId:b.id }); });
+      this.busEl[b.id] = el; this.busMk[b.id] = new gl.Marker({ element: el }).setLngLat(this.pointAt(b.d)).addTo(map);
+    }
+    this.labelMks = [];
+  }
+  addLayers() {
+    const map = this.map, D = this.D;
+    if (map.getSource('r1')) return;
+    const round = { 'line-cap':'round', 'line-join':'round' };
+    map.addSource('r1', { type:'geojson', data: lineFC(D.line) });
+    map.addSource('r1a', { type:'geojson', data: EMPTY });
+    map.addSource('walk', { type:'geojson', data: EMPTY });
+    map.addSource('stops', { type:'geojson', data: { type:'FeatureCollection', features: D.stops.map(s => ({ type:'Feature', properties:{ id:s.id }, geometry:{ type:'Point', coordinates:s.lngLat } })) } });
+    map.addLayer({ id:'r1-case', type:'line', source:'r1', layout: round, paint:{ 'line-color':'#fff', 'line-width':['interpolate',['linear'],['zoom'],11,4,16,11] } });
+    map.addLayer({ id:'r1', type:'line', source:'r1', layout: round, paint:{ 'line-color':'#F2711C', 'line-width':['interpolate',['linear'],['zoom'],11,2,16,6] } });
+    map.addLayer({ id:'r1a-case', type:'line', source:'r1a', layout: round, paint:{ 'line-color':'#fff', 'line-width':['interpolate',['linear'],['zoom'],11,6,16,14] } });
+    map.addLayer({ id:'r1a', type:'line', source:'r1a', layout: round, paint:{ 'line-color':'#F2711C', 'line-width':['interpolate',['linear'],['zoom'],11,3.5,16,8] } });
+    map.addLayer({ id:'walk', type:'line', source:'walk', layout: round, paint:{ 'line-color':'#15171C', 'line-width':['interpolate',['linear'],['zoom'],12,3,17,6], 'line-dasharray':[0.1, 1.9] } });
+    map.addLayer({ id:'stops', type:'circle', source:'stops', paint:{ 'circle-radius':['interpolate',['linear'],['zoom'],11,2.5,15,5.5,17,7.5], 'circle-color':'#fff', 'circle-stroke-color':'#15171C', 'circle-stroke-width':['interpolate',['linear'],['zoom'],11,1.2,15,2.4] } });
+    this.mapReady = true; this.hl = undefined;
+    this.applyStep();
+  }
+  styleBuses() {
+    const st = this.state.step;
+    const want = this.state.destId && ['options','walk','wait','ride'].includes(st) ? this.tracked : null;
+    if (want === this.hl) return; this.hl = want;
+    for (const id in this.busEl) {
+      const el = this.busEl[id], on = id === want;
+      el.style.background = on ? '#FFD43B' : '#15171C'; el.style.color = on ? '#15171C' : '#fff';
+      el.style.width = el.style.height = on ? '38px' : '30px'; el.style.borderRadius = on ? '12px' : '10px';
+      el.innerHTML = BUS_SVG(on ? 20 : 16);
+      this.busMk[id].getElement().style.zIndex = on ? '3' : '1';
+    }
+  }
+  pad() {
+    const S = this.state, wide = S.w >= 760, h = S.h || 800, w = S.w || 1200;
+    const sh = this.sheetRef.current ? this.sheetRef.current.offsetHeight : S.sheetH;
+    const p = wide ? { top:80, bottom:80, left:480, right: S.chatOpen ? 440 : 100 } : { top: S.step === 'ride' ? 160 : 80, bottom: sh + 28, left:40, right:40 };
+    if (p.top + p.bottom > h - 80) { const k = (h - 80) / (p.top + p.bottom); p.top *= k; p.bottom *= k; }
+    if (p.left + p.right > w - 80) { const k = (w - 80) / (p.left + p.right); p.left *= k; p.right *= k; }
+    return p;
+  }
+  fit(coords, maxZoom) {
+    let a = [180, 90, -180, -90]; for (const c of coords) { a = [Math.min(a[0], c[0]), Math.min(a[1], c[1]), Math.max(a[2], c[0]), Math.max(a[3], c[1])]; }
+    this.map.fitBounds([[a[0], a[1]], [a[2], a[3]]], { padding: this.pad(), maxZoom: maxZoom || 16, duration: 900 });
+  }
+  applyStep() {
+    if (!this.mapReady) return;
+    const D = this.D, map = this.map, st = this.state.step, p = this.plan(), gl = window.maplibregl;
+    const routeOn = p && ['options','walk','wait','ride','arrive','done'].includes(st);
+    const act = routeOn ? this.slice(D.origin.at, p.alight.at) : null;
+    map.getSource('r1a').setData(act ? lineFC(act) : EMPTY);
+    map.setPaintProperty('r1', 'line-opacity', act ? 0.3 : 1);
+    map.setPaintProperty('r1-case', 'line-opacity', act ? 0.5 : 1);
+    const walks = !routeOn ? [] : (st === 'arrive' || st === 'done') ? [p.walk2] : p.walkM >= 15 ? [D.walk1, p.walk2] : [D.walk1];
+    map.getSource('walk').setData({ type:'FeatureCollection', features: walks.map(lineFC) });
+    this.labelMks.forEach(m => m.remove()); this.labelMks = [];
+    const label = (ll, text) => { const el = document.createElement('div'); el.style.cssText = "background:#fff;color:#15171C;font:700 13px/1 'Plus Jakarta Sans',sans-serif;padding:7px 10px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(21,23,28,.18);pointer-events:none"; el.textContent = text; this.labelMks.push(new gl.Marker({ element: el, anchor:'left', offset:[12, 0] }).setLngLat(ll).addTo(map)); };
+    if (routeOn) {
+      label(D.origin.lngLat, D.origin.short); label(p.alight.lngLat, p.alight.short);
+      const el = document.createElement('div'); el.style.cssText = 'display:flex;flex-direction:column;align-items:center;pointer-events:none';
+      el.innerHTML = `<div style="display:flex;align-items:center;gap:6px;background:#15171C;color:#fff;font:700 13px/1 'Plus Jakarta Sans',sans-serif;padding:8px 11px;border-radius:999px;white-space:nowrap;box-shadow:0 4px 12px rgba(21,23,28,.25)">${PIN_SVG}${p.place.name}</div><div style="width:2px;height:10px;background:#15171C"></div><div style="width:10px;height:10px;border-radius:50%;background:#15171C;box-shadow:0 0 0 3px #fff"></div>`;
+      this.labelMks.push(new gl.Marker({ element: el, anchor:'bottom', offset:[0, 5] }).setLngLat(p.place.ll).addTo(map));
+    }
+    if (st === 'stop' && this.state.stopId) { const s = D.byId[this.state.stopId]; label(s.lngLat, s.short); }
+    const userAt = st === 'arrive' ? p.alight.lngLat : st === 'done' ? p.place.ll : D.user;
+    this.userMk.setLngLat(userAt); this.userEl.style.display = st === 'ride' ? 'none' : 'block';
+    this.styleBuses();
+    const b = this.bus(this.tracked);
+    switch (st) {
+      case 'home': case 'search': this.fit([D.user, D.byId.menanggal.lngLat, D.byId.royal.lngLat], 15); break;
+      case 'stop': { const s = D.byId[this.state.stopId]; s && map.easeTo({ center: s.lngLat, zoom: 15.5, padding: this.pad(), duration: 800 }); break; }
+      case 'bus': { const bb = this.bus(this.state.busId); bb && map.easeTo({ center: this.pointAt(bb.d), zoom: 15, padding: this.pad(), duration: 800 }); break; }
+      case 'options': this.fit([D.user, ...act, ...p.walk2], 15); break;
+      case 'walk': this.fit(D.walk1, 17); break;
+      case 'wait': this.fit([D.origin.lngLat, D.user, b ? this.pointAt(Math.max(b.d, D.origin.at - 2600)) : D.origin.lngLat], 16); break;
+      case 'ride': b && map.easeTo({ center: this.pointAt(b.d), zoom: 15, padding: this.pad(), duration: 900 }); break;
+      case 'arrive': this.fit(p.walk2, 17); break;
+      case 'done': map.easeTo({ center: p.place.ll, zoom: 16, padding: this.pad(), duration: 900 }); break;
+    }
+  }
+
+  openStop(id) { this.setState({ step:'stop', stopId:id }); }
+  pick(id) { const pl = this.allPlaces().find(p => p.id === id); if (!pl || pl.off) return; this.pickTracked(); this.setState({ destId:id, opt:0, step:'options' }); }
+  goWalk() { const b = this.bus(this.tracked); if (!b || this.etaTo(b, this.D.origin) == null) this.pickTracked(); this.holdAt = this.D.origin.id; this.setState({ step:'walk' }); }
+  board() {
+    const D = this.D, p = this.plan(); if (!p) return;
+    if (!this.bus(this.tracked)) this.pickTracked();
+    const b = this.bus(this.tracked);
+    if (Math.abs(b.d - D.origin.at) > 0.5) b.d = D.origin.at;
+    b.atStop = D.origin.id; b.dwell = 3; this.holdAt = p.alight.id; b.hold = false;
+    this.boardT = this.simT; this.alerted = false;
+    try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); } catch (e) {}
+    this.setState({ step:'ride' });
+  }
+  alight() { const b = this.bus(this.tracked), p = this.plan(); if (b) b.hold = false; this.holdAt = null; this.rideDur = Math.max(300, this.simT - (this.boardT || this.simT)); this.setState({ step: p && p.walkM >= 15 ? 'arrive' : 'done' }); }
+  finish() { const b = this.bus(this.tracked); if (b) b.hold = false; this.tracked = null; this.holdAt = null; this.setState({ step:'home', destId:null, opt:0, saved:false, query:'' }); }
+  back() {
+    const st = this.state.step;
+    const to = { search:'home', options:'search', walk:'options', wait:'walk', stop:'home', bus:'home' }[st] || 'home';
+    if (st === 'walk') this.holdAt = null;
+    if (to === 'home') { this.tracked = null; this.setState({ step:'home', destId:null }); } else this.setState({ step: to });
+  }
+  jump(s) {
+    if (!this.D) return;
+    if (s === 'home') return this.finish();
+    if (s === 'search') return this.setState({ step:'search' });
+    this.pickTracked(); this.holdAt = (s === 'walk' || s === 'wait') ? this.D.origin.id : null;
+    const base = { destId:'tp', opt:0 };
+    if (s === 'ride') return this.setState(base, () => this.board());
+    this.setState({ ...base, step: s });
+  }
+  send(text) {
+    text = (text || '').trim(); if (!text) return;
+    this.setState(s => ({ msgs:[...s.msgs, { me:true, text }], chatInput:'', typing:true }));
+    setTimeout(() => { const a = this.answer(text); this.setState(s => ({ typing:false, msgs:[...s.msgs, { bot:true, ...a }] })); }, 650);
+  }
+  answer(t) {
+    const q = t.toLowerCase();
+    if (/(rute|ke mana|kemana|cara ke|arah ke|naik apa|jalan ke)/.test(q)) return { text:'Untuk cari rute, tutup chat ini lalu tekan "Mau ke mana?". Di sini saya hanya menjawab soal tarif, cara bayar, jam operasional, dan aturan naik.' };
+    let best = null, bs = 0; for (const f of FAQ) { const sc = f.k.filter(k => q.includes(k)).length; if (sc > bs) { bs = sc; best = f; } }
+    if (best) return { text: best.a, src:'Dari FAQ TemanBis · data simulasi' };
+    return { text:'Maaf, saya belum tahu soal itu. Saya hanya menjawab seputar tarif, cara bayar, jam operasional, dan aturan naik Suroboyo Bus.' };
+  }
+
+  renderVals() {
+    const S = this.state, D = this.D, st = S.step;
+    const wide = S.w >= 760, narrow = !wide;
+    const is = {}; ['home','stop','bus','search','options','walk','wait','ride','arrive','done'].forEach(k => { is[k] = st === k; });
+    const L = wide
+      ? { pLeft:'16px', pRight:'auto', pTop:'16px', pBottom:'16px', pWidth:'400px', pMaxH:'none', pRadius:'24px', tcTop: S.w < 1100 ? '80px' : '16px', tcLeft:'432px', tcRight:'auto', tcWidth: S.w < 1100 ? 'calc(100% - 448px)' : 'min(420px, calc(100% - 640px))', chTop:'16px', chRight:'16px', chBottom:'16px', chLeft:'auto', chWidth:'380px', chRadius:'24px', ctrlBottom:'16px' }
+      : { pLeft:'0px', pRight:'0px', pTop:'auto', pBottom:'0px', pWidth:'auto', pMaxH: st === 'search' ? 'calc(100% - 56px)' : st === 'ride' ? '54%' : '72%', pRadius:'24px 24px 0 0', tcTop:'12px', tcLeft:'12px', tcRight:'12px', tcWidth:'auto', chTop:'48px', chRight:'0px', chBottom:'0px', chLeft:'0px', chWidth:'auto', chRadius:'24px 24px 0 0', ctrlBottom: (S.sheetH + 12) + 'px' };
+    const v = {
+      rootRef:this.rootRef, mapRef:this.mapRef, sheetRef:this.sheetRef, searchRef:this.searchRef, msgRef:this.msgRef, rideRef:this.rideRef,
+      onRideWheel: () => { this._userScroll = performance.now(); },
+      wide, narrow, is, L, chatOpen:S.chatOpen, chatBackdrop: S.chatOpen && narrow, typing:S.typing, chatInput:S.chatInput, query:S.query,
+      showBrandPill: narrow && !is.ride && !is.search, showNarrowCtrls: narrow && !is.search && !S.chatOpen, showWideTanya: wide && !S.chatOpen,
+      showSteps: is.walk || is.wait || is.ride || is.arrive, canBack: is.walk || is.wait,
+      goSearch: () => this.setState({ step:'search', query:'' }), back: () => this.back(), goWalk: () => this.goWalk(), goWait: () => this.setState({ step:'wait' }),
+      board: () => this.board(), alight: () => this.alight(), arrived: () => this.setState({ step:'done' }), finish: () => this.finish(),
+      toggleSaved: () => this.setState(s => ({ saved: !s.saved })),
+      onQuery: e => this.setState({ query: e.target.value }),
+      openChat: () => this.setState({ chatOpen:true }), closeChat: () => this.setState({ chatOpen:false }),
+      onChatInput: e => this.setState({ chatInput: e.target.value }), onChatKey: e => { if (e.key === 'Enter') this.send(this.state.chatInput); }, sendChat: () => this.send(this.state.chatInput),
+      askPay: e => { e.preventDefault(); this.setState({ chatOpen:true }); this.send('Bayarnya pakai apa?'); },
+      quick: QUICK.map(t => ({ text:t, ask: () => this.send(t) })),
+      msgs: S.msgs.map(m => ({ bot: !!m.bot, me: !!m.me, text: m.text, src: m.src || '', hasSrc: !!m.src })),
+      zoomIn: () => this.map && this.map.zoomIn(), zoomOut: () => this.map && this.map.zoomOut(), recenter: () => this.applyStep(),
+      top: { normal:false, alert:false }, nearby:[], favStops:[], hasFav:true, noFav:false, results:[], resLbl:'Tempat populer', noResults:false, opts:[], bars:[],
+      plan:{ dest:'', busAway:'' }, sv:{ rest:[] }, bv:{ next:[] }, wk:{ steps:[] }, wt:{ nodes:[] }, rd:{ rows:[] }, ar:{ steps:[] }, dn:{}, stepLbl:'',
+    };
+    if (!D || !this.buses) return v;
+    const now = BASE_CLOCK + this.simT, O = D.origin;
+    const etaShort = x => !x ? '' : (x.n === 0 || x.eta === 0) ? 'sedang berhenti' : rangeTxt(x.eta);
+
+    v.nearby = D.stops.map(s => ({ s, d: s.id === 'uinsa' ? D.walk1M : hav(D.user, s.lngLat) * 1.3 })).sort((a, b) => a.d - b.d).slice(0, 3).map(({ s, d }) => { const a = this.arrivals(s)[0]; return { name:s.name, sub:`${fmtM(d)} · ${s.road}`, away:this.awayTxt(a), eta:etaShort(a), open: () => this.openStop(s.id) }; });
+    v.favStops = S.fav.map(id => { const s = D.byId[id], a = this.arrivals(s)[0]; return { short:s.short, next:this.awayTxt(a), open: () => this.openStop(id) }; });
+    v.hasFav = v.favStops.length > 0; v.noFav = !v.hasFav;
+
+    if (is.stop && S.stopId) {
+      const s = D.byId[S.stopId], arr = this.arrivals(s), fav = S.fav.includes(s.id);
+      v.sv = { name:s.name, road:s.road, firstAway: this.awayTxt(arr[0]), firstEta: arr[0] ? (arr[0].eta === 0 ? 'Bus sedang berhenti di halte ini' : `sekitar ${rangeTxt(arr[0].eta)}`) : 'Tidak ada bus menuju halte ini', rest: arr.slice(1, 3).map(x => ({ away:this.awayTxt(x), eta:rangeTxt(x.eta) })), starFill: fav ? '#F5B800' : 'none', starStroke: fav ? '#F5B800' : '#15171C', toggleFav: () => this.setState(st2 => ({ fav: st2.fav.includes(s.id) ? st2.fav.filter(f => f !== s.id) : [...st2.fav, s.id] })) };
+    }
+    if (is.bus && S.busId) {
+      const b = this.bus(S.busId), ns = this.nextStop(b);
+      v.bv = { status: b.atStop && b.dwell > 0 ? `Sedang berhenti di ${D.byId[b.atStop].name}` : `Menuju ${ns.name}`, next: D.stops.filter(s => s.at > b.d + 0.5).slice(0, 4).map(s => ({ name:s.name, eta:rangeTxt(this.etaTo(b, s)) })) };
+    }
+    if (is.search) {
+      const q = S.query.trim().toLowerCase();
+      const list = q ? this.allPlaces().filter(p => (p.name + ' ' + p.sub).toLowerCase().includes(q)) : PLACES;
+      v.resLbl = q ? 'Hasil' : 'Tempat populer';
+      v.results = list.slice(0, 7).map(p => ({ name:p.name, sub:p.sub, off:!!p.off, on:!p.off, color: p.off ? '#5C616B' : '#15171C', cursor: p.off ? 'default' : 'pointer', pick: () => this.pick(p.id) }));
+      v.noResults = q && list.length === 0;
+    }
+
+    const p = this.plan();
+    if (!p) return v;
+    const first = this.arrivals(O)[0], tb = this.bus(this.tracked);
+    const tArr = tb ? { b:tb, eta:this.etaTo(tb, O), n:this.awayTo(tb, O) } : first;
+    const busLine = x => !x || x.eta == null ? 'sudah lewat, tunggu bus berikutnya' : (x.eta === 0 ? 'sudah di halte' : `${this.awayTxt(x)} · ${rangeTxt(x.eta)}`);
+    v.plan = { dest:p.place.name, busAway: busLine(tArr) };
+    const w1s = D.walk1M / WALK_V;
+    v.opts = p.opts.map((o, i) => {
+      const ride = o.rideM / V_AVG + Math.max(0, o.nStops - 1) * DWELL, w2 = o.walkM / WALK_V;
+      const tot = w1s + Math.max(0, ((tArr && tArr.eta != null) ? tArr.eta : 600) - w1s) + ride + w2;
+      return { range: rangeTxt(tot), arrive: clockRange(now, tot), rec: i === 0 && p.opts.length > 1, alight: o.alight.name, walk1: fmtM(D.walk1M), walk2: fmtM(o.walkM), hasWalk2: o.walkM >= 15, nStops: `${o.nStops} halte`, walkTotal: fmtM(D.walk1M + o.walkM), border: i === S.opt ? '#15171C' : '#E6E6E2', select: () => this.setState({ opt:i }) };
+    });
+    const nSteps = p.walkM >= 15 ? 3 : 2, idx = is.walk ? 1 : (is.wait || is.ride) ? 2 : 3;
+    v.stepLbl = `Langkah ${Math.min(idx, nSteps)} dari ${nSteps}`;
+    v.bars = Array.from({ length:nSteps }, (_, i) => ({ bg: i < idx ? '#15171C' : '#E6E6E2' }));
+    const steps = arr => arr.map((t, i) => ({ n: i + 1, text: t, line: i < arr.length - 1 ? '#E6E6E2' : 'transparent' }));
+
+    v.wk = { title:`Jalan ${fmtM(D.walk1M)} ke ${O.name}`, mins:`Sekitar ${Math.max(1, Math.round(w1s / 60))} menit`, bus: busLine(tArr), steps: steps(['Keluar lewat gerbang depan kampus ke Jl. Ahmad Yani.', 'Naik jembatan penyeberangan (JPO) di depan kampus untuk ke seberang jalan.', 'Turun dari JPO. Halte UINSA ada di sebelah kanan, di depan deretan toko.']) };
+
+    if (is.wait) {
+      const nodesS = [D.byId.menanggal, D.byId.margorejo, O], start = D.byId.menanggal.at - 300, span = O.at - start;
+      const pos = [0.12, 0.5, 0.88], ats = nodesS.map(s => s.at);
+      const pct = d => { if (d <= ats[0]) return 6 + Math.max(0, (d - start) / (ats[0] - start)) * (pos[0] * 100 - 6); for (let i = 0; i < 2; i++) if (d <= ats[i + 1]) return (pos[i] + (d - ats[i]) / (ats[i + 1] - ats[i]) * (pos[i + 1] - pos[i])) * 100; return pos[2] * 100; };
+      const atH = tb && tb.atStop === O.id, bp = tb ? pct(tb.d) : 6;
+      let next2 = this.arrivals(O).filter(x => !tb || x.b.id !== tb.id)[0];
+      v.wt = {
+        big: !tb ? '—' : atH ? 'Bus sudah di halte' : (tArr.eta != null && tArr.eta < 90) ? 'Segera tiba' : `${tArr.n} halte lagi`,
+        sub: !tb ? '' : atH ? 'Naik sekarang, lalu tekan tombol di bawah.' : `sekitar ${rangeTxt(tArr.eta)} · ${tb.atStop && tb.dwell > 0 ? 'berhenti di ' + D.byId[tb.atStop].short : 'menuju ' + this.nextStop(tb).short}`,
+        nodes: nodesS.map(s => ({ left: pct(s.at) + '%', label: s.id === O.id ? 'UINSA (kamu)' : s.short.replace('Dukuh ', ''), ring: s.id === O.id ? '#15171C' : (tb && tb.d >= s.at - 0.5 ? '#F2711C' : '#C9C9C4'), weight: s.id === O.id ? '800' : '600' })),
+        busLeft: bp + '%', fill: Math.max(0, bp - 6) + '%',
+        next: next2 ? `Bus setelahnya: ${this.awayTxt(next2)} · ${rangeTxt(next2.eta)}` : '',
+      };
+    }
+
+    if (is.ride && tb) {
+      const A = p.alight, left = this.awayTo(tb, A), arrived = tb.atStop === A.id;
+      const dwelling = tb.atStop && tb.dwell > 0 && tb.atStop !== O.id ? D.byId[tb.atStop] : null;
+      const ns = this.nextStop(tb), eta = this.etaTo(tb, A) || 0;
+      const alertOn = !arrived && left <= 1 && tb.d > O.at + 1;
+      v.rd = {
+        alight: A.name, nextLbl: dwelling ? 'Sedang berhenti di' : 'Halte berikutnya', nextName: (dwelling || ns).short,
+        leftN: String(left), leftTxt: arrived ? 'Sampai' : `${left} halte`, dist: fmtM(Math.max(0, A.at - tb.d)),
+        arrive: arrived ? 'Sekarang' : clockRange(now, eta), pct: Math.max(0, Math.min(100, (tb.d - O.at) / (A.at - O.at) * 100)) + '%',
+        arrived, notArrived: !arrived, rows: [],
+      };
+      const seg = D.stops.filter(s => s.i >= O.i && s.i <= A.i);
+      let busPlaced = false, nextMarked = false;
+      const rows = [];
+      seg.forEach((s, i) => {
+        const here = tb.atStop === s.id && (tb.dwell > 0 || tb.hold || s.id === A.id);
+        const passed = !here && s.at < tb.d - 0.5;
+        if (!busPlaced && !passed && !here) { if (i > 0) rows.push({ isBus:true, isStop:false, cur:'1', name:'Bus kamu', weight:'700', color:'#5C616B', hasTag:false }); busPlaced = true; }
+        if (here) busPlaced = true;
+        const isNext = !passed && !here && !nextMarked; if (isNext) nextMarked = true;
+        const final = s.id === A.id;
+        rows.push({ isBus:false, isStop:true, cur: here ? '1' : '0', name:s.name, weight: (here || isNext || final) ? '800' : '500', color: passed ? '#5C616B' : '#15171C',
+          size: final ? '18px' : (here || isNext) ? '16px' : '12px', fill: passed ? '#15171C' : here ? '#FFD43B' : final ? '#15171C' : '#fff',
+          border: passed ? '0px solid transparent' : here ? '3px solid #15171C' : final ? '4px solid #FFD43B' : isNext ? '3px solid #15171C' : '2px solid #C9C9C4',
+          hasTag: final || here, tag: final ? 'Turun di sini' : 'Berhenti', tagBg: final ? '#FFD43B' : '#F3F3F0' });
+      });
+      rows.forEach((r, i) => { const pastIdx = rows.findIndex(x => x.isBus || (x.isStop && x.fill === '#FFD43B')); const done = pastIdx === -1 ? false : i <= pastIdx; r.lt = i === 0 ? 'transparent' : (i <= pastIdx ? '#15171C' : '#E2E2DE'); r.lb = i === rows.length - 1 ? 'transparent' : (i < pastIdx ? '#15171C' : '#E2E2DE'); });
+      v.rd.rows = rows;
+      v.top = { normal: !alertOn && !arrived, alert: alertOn || arrived, title: arrived ? 'Turun di sini' : 'Siap-siap turun', body: arrived ? `Bus sudah berhenti di ${A.name}. Turun lewat pintu, lalu tekan "Saya sudah turun".` : `Halte berikutnya ${A.name}. Bersiap di dekat pintu dan beri tahu petugas.` };
+    }
+
+    if (is.arrive) {
+      const tp = p.place.id === 'tp' && p.alight.id === 'basra';
+      v.ar = { title:`Jalan ${fmtM(p.walkM)} ke ${p.place.name}`, mins:`Sekitar ${Math.max(1, Math.round(p.walkM / WALK_V / 60))} menit`,
+        callout: tp ? 'Tunjungan Plaza ada di sisi kiri jalan. Tidak perlu menyeberang.' : 'Perhatikan sisi jalan saat turun. Menyeberang hanya di zebra cross atau JPO.',
+        steps: steps(tp ? ['Turun dari bus, lalu jalan ke utara di trotoar Jl. Basuki Rahmat.', 'Ikuti garis titik-titik di peta, sekitar 500 m lurus.', 'Pintu masuk Tunjungan Plaza ada di kiri jalan.'] : [`Turun di ${p.alight.name}.`, `Jalan sekitar ${fmtM(p.walkM)} mengikuti garis titik-titik di peta.`, `${p.place.name} ada di ujung garis.`]) };
+    }
+    if (is.done) {
+      const tot = w1s + this.rideDur + p.walkM / WALK_V;
+      v.dn = { dest:p.place.name, dur:`${Math.round(tot / 60)} mnt`, walk: fmtM(D.walk1M + p.walkM), stops:`${p.nStops} halte`, saveLbl: S.saved ? 'Tersimpan di favorit' : 'Simpan rute ke favorit', starFill: S.saved ? '#F5B800' : 'none', starStroke: S.saved ? '#F5B800' : '#15171C' };
+    }
+    return v;
+  }
+}
+</script>
+</body>
+</html>
